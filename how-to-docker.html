@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>How to Docker</title>
+    <meta name="description" content="How to Docker or, why you might not want to.">
+    <meta name="author" content="Mathew Peterson">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+    <link rel="stylesheet" href="bower_components/reveal.js/css/reveal.css">
+    <link rel="stylesheet" href="palantirnet-theme/css/styles.css" id="theme">
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? 'palantirnet-theme/css/print/pdf.css' : 'palantirnet-theme/css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+    <!--[if lt IE 9]>
+    <script src="bower_components/html5shiv/dist/html5shiv.min.js"></script>
+    <![endif]-->
+  </head>
+  <!-- Change body class to "dark" if you prefer a dark theme, or "light" if you'd rather have a light theme-->
+  <body class="light">
+    <div class="reveal">
+      <!-- Any section element inside of this container is displayed as a slide -->
+      <div class="slides">
+          <section>
+            <section>
+              <h1>How to Docker</h1>
+              <h2>Or why you might not want to</h2>
+              <p>
+                  <small>Presented by: Mathew Peterson (<a href="https://twitter.com/mathewpeterson">@mathewpeterson</a> / <a href="https://github.com/mathewpeterson">github</a>)</small>
+              </p>
+            </section>
+            <section>
+                <h1>Who am I?</h1>
+                <img src="https://www.palantir.net/sites/default/files/styles/user/public/headshots_0014_MathewP_020615-0392.jpg">
+                <br>
+                <ul>
+                    <li>Platform Engineer at <a href="https://palantir.net">Palantir.net</a></li>
+                    <li>I work on our tool chain</li>
+                </ul>
+            </section>
+            <section>
+                <h1>Who are you?</h1>
+                <ul>
+                    <li>Developer</li>
+                    <li>Engineer</li>
+                    <li>Heard of Docker</li>
+                </ul>
+            </section>
+            <section>
+                <h1>Overview</h1>
+                <ul>
+                    <li>Standard Environment</li>
+                    <li>Docker Environment</li>
+                    <li>Issues</li>
+                    <li>Resources</li>
+                </ul>
+            </section>
+        </section>
+
+        <section>
+            <section>
+                <h1>Standard Environment</h1>
+            </section>
+
+            <section> <!-- ubuntu -->
+                <h1><img src="https://design.ubuntu.com/wp-content/uploads/logo-ubuntu_no%C2%AE-black_orange-hex.png"></h1>
+            </section>
+
+            <section><!-- nginx -->
+                <h1><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Nginx_logo.svg/2000px-Nginx_logo.svg.png"></h1>
+            </section>
+
+            <section><!-- php -->
+                <h1><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/PHP-logo.svg/2000px-PHP-logo.svg.png"></h1>
+            </section>
+
+            <section><!-- mysql -->
+                <h1><img src="https://upload.wikimedia.org/wikipedia/en/6/62/MySQL.svg"></h1>
+            </section>
+
+            <section> <!-- vagrant -->
+                <h1><img src="https://hashicorp.com/images/blog/a-new-look-for-vagrant/logo_wide-fbb6c6e8.png"></h1>
+                <ul>
+                    <li><a href="https://github.com/oscar-stack/vagrant-auto_network">vagrant-auto_network</a></li>
+                    <li><a href="https://github.com/smdahlen/vagrant-hostmanager">vagrant-hostmanager</a></li>
+                </ul>
+            </section>
+
+            <section><!-- ansible -->
+                <h1><img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Ansible_Logo.png"></h1>
+            </section>
+
+            <section>
+                <h1>Request Lifecycle</h1>
+                <ol>
+                    <li>Browser queries DNS for IP Address</li>
+                    <li>Browser sends request to web server</li>
+                    <li>Web server determines how to handle request</li>
+                    <li>Web server forwards request to PHP</li>
+                    <li>PHP executes and returns response to webserver</li>
+                    <li>Web server sends response back to browser</li>
+                    <li>Browser renders response</li>
+                </ol>
+            </section>
+        </section>
+
+        <section>
+            <section>
+                <h1>Docker Environment</h1>
+            </section>
+
+            <section>
+                <h1>Docker (current) limitations</h1>
+                <ul>
+                    <li>Docker uses a single ip address
+                        <ul>
+                            <li>Docker 1.9 released better networking support but it still lacks magic.</li>
+                        </ul>
+                    </li>
+                    <li>Docker containers are "linked" to other containers
+                        <ul>
+                            <li>You can expose a port to the Docker host</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>docker-compose.yml</h1>
+                <pre>
+                    app:
+                        container_name: project-app
+                        image: ubuntu:trusty
+                        volumes:
+                            - .:/var/www
+                        tty: true
+
+                    php:
+                        container_name: project-php
+                        image: php:5.6-fpm
+                        working_dir: "/var/www"
+                        volumes:
+                            - ./docker/php.ini:/usr/local/etc/php/conf.d/php.ini:ro
+                            - ./docker/pool.conf:/usr/local/etc/php/pool.conf:ro
+                        volumes_from:
+                            - app
+                        links:
+                            - mysql
+
+                    nginx:
+                        container_name: project-nginx
+                        image: nginx
+                        ports:
+                            - "8080:80"
+                        links:
+                            - php
+                        volumes:
+                            - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+                        volumes_from:
+                            - app
+
+                    mysql:
+                        container_name: project-mysql
+                        image: mysql
+                        environment:
+                            MYSQL_ROOT_PASSWORD: root
+
+                </pre>
+            </section>
+
+            <section>
+                <h1>docker-compose.yml</h1>
+                <p>You can open <a href="http://172.16.63.202:8080">http://172.16.63.202:8080</a></p>
+            </section>
+
+            <section>
+                <h1>Issues</h1>
+                <ul>
+                    <li>What about DNS?</li>
+                    <li>Who wants to track port mappings?</li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>DNS</h1>
+                <ul>
+                    <li>How can we resolve project.docker.local?
+                        <ul>
+                            <li>Manually edit /etc/hosts</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>Authoritative DNS</h1>
+                <ul>
+                    <li>Setup an authoritative DNS server container!</li>
+                    <li>andyshinn/dnsmasq</li>
+                    <li>Tell dnsmasq to resolve anything from *.docker.local to your docker-machine ip address</li>
+                    <li>Have it listen on port 53 from the docker-machine host</li>
+                    <li>You can now query and resolve domain names!</li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>docker-compose.yml</h1>
+                <pre>
+                    dnsmasq:
+                        container_name: dnsmasq
+                        image: andyshinn/dnsmasq:latest
+                        ports:
+                            - "53:53/tcp"
+                            - "53:53/udp"
+                        cap_add:
+                            - NET_ADMIN
+                        command: --address=/.docker.local/172.16.63.202
+                </pre>
+            </section>
+
+            <section>
+                <h1>Resolver</h1>
+                <ul>
+                    <li>Create a resolver config under /etc/resolver/docker.local</li>
+                    <li>This will direct all dns requests for *.docker.local to your specified nameserver</li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>/etc/resolver/docker.local</h1>
+                <pre>
+                    nameserver 172.16.63.202
+                </pre>
+            </section>
+
+            <section>
+                <p>You can open <a href="http://project.docker.local:8080">http://project.docker.local:8080</a></p>
+            </section>
+
+            <section>
+                <h1>Issues</h1>
+                <ul>
+                    <li>What about DNS?</li>
+                    <li>Who wants to track port mappings?</li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>Reverse Proxy</h1>
+                <ul>
+                    <li>jwilder/nginx-proxy</li>
+                    <li>This attaches to docker.sock and listen for container lifecycle events</li>
+                    <li>When containers are created / destroyed it will dynamically build a nginx.conf and route traffic to your desired container</li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>docker-compose.yml</h1>
+                <pre>
+                    nginx-proxy:
+                        container_name: nginx-proxy
+                        image: jwilder/nginx-proxy:latest
+                        ports:
+                            - "80:80"
+                            - "443:443"
+                        volumes:
+                            - /var/run/docker.sock:/tmp/docker.sock:ro
+                </pre>
+            </section>
+
+            <section>
+                <h1>Reverse Proxy</h1>
+                <p>All you need to do is add the `VIRTUAL_HOST=project.docker.local` environment variable to your project web server</p>
+            </section>
+
+            <section>
+                <h1>docker-compose.yml</h1>
+                <pre>
+                    app:
+                        ...
+                    php:
+                        ...
+                    nginx:
+                        container_name: project-nginx
+                        image: nginx
+                        environment:
+                            VIRTUAL_HOST: project.docker.local
+                        links:
+                            - php
+                        volumes:
+                            - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+                        volumes_from:
+                            - app
+                    mysql:
+                        ...
+                </pre>
+            </section>
+
+            <section>
+                <p>You can open <a href="http://project.docker.local">http://project.docker.local</a></p>
+            </section>
+
+            <section>
+                <h1>Issues</h1>
+                <ul>
+                    <li>What about DNS?</li>
+                    <li>Who wants to track port mappings?</li>
+                </ul>
+            </section>
+
+        </section>
+
+        <section>
+            <section>
+                <h1>My Docker Environment</h1>
+                <ul>
+                    <li>andyshinn/dnsmasq</li>
+                    <li>jwilder/nginx-proxy</li>
+                    <li>schickling/mailcatcher</li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>Mailcatcher</h1>
+                <p>"Catches mail and serves it through a dream."</p>
+            </section>
+
+            <section>
+                <h1>docker-compose.yml</h1>
+                <pre>
+                    dnsmasq:
+                        container_name: dnsmasq
+                        image: andyshinn/dnsmasq:latest
+                        ports:
+                            - "53:53/tcp"
+                            - "53:53/udp"
+                        cap_add:
+                            - NET_ADMIN
+                        command: --address=/.docker.local/172.16.63.202
+
+                    nginx-proxy:
+                        container_name: nginx-proxy
+                        image: jwilder/nginx-proxy:latest
+                        ports:
+                            - "80:80"
+                            - "443:443"
+                        volumes:
+                            - /var/run/docker.sock:/tmp/docker.sock:ro
+
+                    mailcatcher:
+                        container_name: mailcatcher
+                        image: schickling/mailcatcher:latest
+                        ports:
+                            - "1025:1025"
+                        environment:
+                            VIRTUAL_HOST: "mailcatcher.docker.local"
+                            VIRTUAL_PORT: "1080"
+                </pre>
+            </section>
+
+            <section>
+                <h1>Adding the special sauce</h1>
+                <ul>
+                    <li>Remove hard coded variables</li>
+                    <li>Script all the things by using a Makefile
+                        <ul>
+                            <li>Create docker-machine</li>
+                            <li>Create /etc/resolver configs</li>
+                            <li>Automates environment variables for docker-compose.yml</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>Makefile</h1>
+                <pre>
+                    DOCKER=/usr/local/bin/docker
+
+                    DOCKER_MACHINE=/usr/local/bin/docker-machine
+                    DOCKER_MACHINE_CREATE_ARGS:=create
+                    DOCKER_MACHINE_START_ARGS:=start
+
+                    DOCKER_MACHINE_NAME:=default
+                    DOCKER_MACHINE_IP=$(shell docker-machine ip $(DOCKER_MACHINE_NAME))
+
+                    DOCKER_COMPOSE=/usr/local/bin/docker-compose
+                    DOCKER_COMPOSE_START_ARGS:= --detatch
+                    DOCKER_COMPOSE_UP_ARGS:= -d
+
+                    DOCKER_DNS_DOMAIN:=docker.local
+
+                    ENV_VARS= DOCKER_DNS_DOMAIN=$(DOCKER_DNS_DOMAIN) DOCKER_MACHINE_IP=$(DOCKER_MACHINE_IP)
+
+                    machine: machine-vmware resolver
+
+                    machine-vmware:
+                    	$(DOCKER_MACHINE) \
+                    		$(DOCKER_MACHINE_CREATE_ARGS) \
+                        --driver vmwarefusion \
+                        --vmwarefusion-cpu-count 2 \
+                        --vmwarefusion-disk-size 80000 \
+                        --vmwarefusion-memory-size 4096 \
+                        $(DOCKER_MACHINE_NAME)
+
+                    machine-virtualbox:
+                    	$(DOCKER_MACHINE) \
+                    		$(DOCKER_MACHINE_CREATE_ARGS) \
+                        --driver virtualbox \
+                        --virtualbox-cpu-count 2 \
+                        --virtualbox-disk-size 80000 \
+                        --virtualbox-memory 4096 \
+                        $(DOCKER_MACHINE_NAME)
+
+                    resolver:
+                    	sudo mkdir -p /etc/resolver
+                    	echo "nameserver $(shell docker-machine ip $(DOCKER_MACHINE_NAME))" | sudo tee /etc/resolver/$(DOCKER_DNS_DOMAIN)
+                    	echo "nameserver $(shell docker-machine ip $(DOCKER_MACHINE_NAME))\n\nport 8600" | sudo tee /etc/resolver/local.consul
+
+                    machine:
+                    	$(DOCKER_MACHINE) \
+                    		$(DOCKER_MACHINE_START_ARGS) \
+                    		$(DOCKER_MACHINE_NAME)
+
+                    up:
+                    	$(ENV_VARS)	\
+                    		$(DOCKER_COMPOSE) \
+                    		up $(DOCKER_COMPOSE_UP_ARGS)
+
+                    start:
+                    	$(ENV_VARS)	\
+                    		$(DOCKER_COMPOSE) \
+                    		start $(DOCKER_COMPOSE_START_ARGS)
+
+                    rmf:
+                    	$(ENV_VARS) \
+                    		$(DOCKER_COMPOSE) \
+                    		rm --force
+
+                    compose:
+                    	$(ENV_VARS)	\
+                    		$(DOCKER_COMPOSE)
+
+                    stop rm logs ps version build:
+                    	$(ENV_VARS) \
+                    		$(DOCKER_COMPOSE) \
+                    		$@
+
+                    rebuild: stop rmf up
+                </pre>
+            </section>
+        </section>
+
+        <section>
+            <section>
+                <h1>Resources</h1>
+                <ul>
+                    <li><a href="https://medium.com/engineering-at-ifttt/developing-with-docker-at-ifttt-5bd03b4e597c#.d1wpfgcm6">https://medium.com/engineering-at-ifttt/developing-with-docker-at-ifttt-5bd03b4e597c#.d1wpfgcm6</a></li>
+                    <li><a href="https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man5/resolver.5.html">https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man5/resolver.5.html</a></li>
+                    <li><a href="https://hub.docker.com/r/andyshinn/dnsmasq">https://hub.docker.com/r/andyshinn/dnsmasq</a></li>
+                    <li><a href="https://hub.docker.com/r/jwilder/nginx-proxy">https://hub.docker.com/r/jwilder/nginx-proxy</a></li>
+                    <li><a href="http://mailcatcher.me">http://mailcatcher.me</a></li>
+                </ul>
+            </section>
+
+            <section>
+                <h1>Git Repositories</h1>
+                <ul>
+                    <li><a href="https://github.com/mathewpeterson/my-docker-environment">https://github.com/mathewpeterson/my-docker-environment</a></li>
+                    <li><a href="https://github.com/mathewpeterson/docker-nginx-mysql-php">https://github.com/mathewpeterson/docker-nginx-mysql-php</a></li>
+                </ul>
+            </section>
+
+        </section>
+
+        <section>
+            <section>
+                <h1>Questions?</h1>
+            </section>
+
+            <section>
+                <h1>Thank You!</h1>
+                <ul>
+                    <li><a href="https://twitter.com/mathewpeterson">@mathewpeterson</a></li>
+                    <li><a href="https://northeastwi.slack.com/">https://northeastwi.slack.com/</a></li>
+                    <li><a href="http://newslack.herokuapp.com/">http://newslack.herokuapp.com/</a></li>
+                </ul>
+            </section>
+        </section>
+
+      </div>
+      <footer class="footer">
+        <a class="logo-wrapper" href="https://www.palantir.net/" title="Link to Palantir.net's website">
+          <div class="logo">
+            <p>Palantir.net</p>
+          </div>
+        </a>
+      </footer>
+    </div>
+
+    <script src="bower_components/headjs/dist/1.0.0/head.js"></script>
+    <script src="bower_components/reveal.js/js/reveal.js"></script>
+
+    <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+
+        transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'bower_components/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'bower_components/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+          { src: 'bower_components/reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+          { src: 'bower_components/reveal.js/plugin/zoom-js/zoom.js', async: true },
+          { src: 'bower_components/reveal.js/plugin/notes/notes.js', async: true }
+        ]
+      });
+
+    </script>
+
+  </body>
+</html>
